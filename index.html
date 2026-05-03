@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>VETRIX ANDROID</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Outfit', sans-serif;
+}
+
+body {
+  background: radial-gradient(circle at top, #140000, #000);
+  color: white;
+}
+
+/* LOGIN */
+#login {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  width: 90%;
+  max-width: 340px;
+  padding: 30px;
+  border-radius: 20px;
+  background: rgba(20, 0, 0, 0.6);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,0,0,0.2);
+  box-shadow: 0 0 40px rgba(255,0,0,0.25);
+  text-align: center;
+  animation: fadeIn 0.6s ease;
+}
+
+.card h2 {
+  color: #ff2e2e;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.card input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  margin-top: 10px;
+  outline: none;
+  transition: 0.3s;
+}
+
+.card input:focus {
+  box-shadow: 0 0 10px red;
+}
+
+.card button {
+  width: 100%;
+  margin-top: 15px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(45deg, red, #700000);
+  color: white;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.card button:active {
+  transform: scale(0.95);
+}
+
+/* PANEL */
+#panel {
+  display: none;
+  padding: 20px;
+}
+
+.box {
+  max-width: 400px;
+  margin: auto;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(15,15,15,0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,0,0,0.2);
+  box-shadow: 0 0 30px rgba(255,0,0,0.2);
+  animation: fadeIn 0.6s ease;
+}
+
+.box h3 {
+  text-align: center;
+  color: #ff2e2e;
+  margin-bottom: 10px;
+}
+
+#device {
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* BUTTONS */
+.btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(45deg, red, #700000);
+  color: white;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: 0.2s;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+/* SLIDERS */
+.slider {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.label {
+  margin-top: 15px;
+  font-size: 13px;
+  color: #ff3a3a;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+
+<body>
+
+<div id="login">
+  <div class="card">
+    <h2>VETRIX</h2>
+    <input type="text" id="keyInput" placeholder="Digite sua KEY">
+    <button onclick="entrar()">ENTRAR</button>
+    <p id="msg"></p>
+  </div>
+</div>
+
+<div id="panel">
+  <div class="box">
+    <h3>ANDROID PANEL</h3>
+
+    <p id="device"></p>
+
+    <button class="btn" onclick="basic()">Otimização Básica</button>
+    <button class="btn" onclick="pro()">Otimização Avançada</button>
+
+    <p class="label">FPS</p>
+    <input type="range" min="30" max="120" value="60" class="slider" id="fps" oninput="fpsUpdate()">
+    <p id="fpsTxt">FPS: 60</p>
+
+    <p class="label">Delay</p>
+    <input type="range" min="0" max="100" value="0" class="slider" id="delay" oninput="delayUpdate()">
+    <p id="delayTxt">Delay: 0%</p>
+
+    <button class="btn" onclick="apply()">Aplicar</button>
+    <button class="btn" onclick="abrirFF()">ABRIR FREE FIRE</button>
+    <button class="btn" onclick="logout()">SAIR</button>
+  </div>
+</div>
+
+<script>
+// FIREBASE
+const firebaseConfig = {
+    apiKey: "AIzaSyBlug6Fm9HjfWaaMOUHGNJVHpW97BvBF-g",
+    authDomain: "vetrix7-1d0cd.firebaseapp.com",
+    databaseURL: "https://vetrix7-1d0cd-default-rtdb.firebaseio.com",
+    projectId: "vetrix7-1d0cd"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// AUTO LOGIN
+const savedKey = localStorage.getItem("vetrix_key");
+if (savedKey) validarKey(savedKey);
+
+function entrar() {
+    const key = document.getElementById("keyInput").value.trim();
+    validarKey(key);
+}
+
+function validarKey(key) {
+    let valid = false;
+
+    db.ref("keys").once("value", snap => {
+        snap.forEach(s => {
+            const data = s.val();
+
+            if (data.key === key) {
+                const now = new Date();
+                const exp = new Date(data.expiresAt);
+
+                if (now <= exp) {
+                    valid = true;
+
+                    localStorage.setItem("vetrix_key", key);
+
+                    document.getElementById("login").style.display = "none";
+                    document.getElementById("panel").style.display = "block";
+
+                    document.getElementById("device").innerText =
+                      "Dispositivo: " + navigator.userAgent;
+                }
+            }
+        });
+
+        if (!valid) {
+            document.getElementById("msg").innerText = "Key inválida ou expirada";
+        }
+    });
+}
+
+function logout() {
+    localStorage.removeItem("vetrix_key");
+    location.reload();
+}
+
+function fpsUpdate() {
+  document.getElementById("fpsTxt").innerText =
+    "FPS: " + document.getElementById("fps").value;
+}
+
+function delayUpdate() {
+  document.getElementById("delayTxt").innerText =
+    "Delay: " + document.getElementById("delay").value + "%";
+}
+
+function basic() {
+  let btn = event.target;
+  btn.innerText = "Aplicando...";
+  setTimeout(() => btn.innerText = "Básico ✓", 1500);
+}
+
+function pro() {
+  let btn = event.target;
+  btn.innerText = "Otimizando...";
+  setTimeout(() => btn.innerText = "Avançado ✓", 2000);
+}
+
+function apply() {
+  let btn = event.target;
+  btn.innerText = "Aplicando...";
+  setTimeout(() => btn.innerText = "Aplicado ✓", 1500);
+}
+
+function abrirFF() {
+  let ua = navigator.userAgent.toLowerCase();
+
+  if (ua.includes("android")) {
+    window.location.href =
+      "intent://#Intent;scheme=freefire;package=com.dts.freefireth;end";
+  } else {
+    window.location.href = "freefire://";
+  }
+}
+</script>
+
+</body>
+</html>
